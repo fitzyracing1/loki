@@ -1,0 +1,26 @@
+# Fork-only helper so this repository can test index-gateway changes on
+# GitHub-hosted runners. grafana/loki's official check workflow uses
+# Grafana self-hosted labels (ubuntu-x64), which this fork does not have.
+# Do not include this file in an upstream pull request.
+name: fork-indexgateway-test
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: git ref to test
+        required: true
+        type: string
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Test pkg/indexgateway
+        run: go test ./pkg/indexgateway/ -count=2 -timeout 15m
+      - name: Race TestIndexOwnershipWatcher
+        run: go test ./pkg/indexgateway/ -race -count=2 -timeout 15m -run 'TestIndexOwnershipWatcher$'
